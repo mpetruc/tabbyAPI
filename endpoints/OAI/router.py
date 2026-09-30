@@ -26,6 +26,7 @@ from endpoints.OAI.types.chat_completion import (
     ChatCompletionResponse,
 )
 from endpoints.OAI.types.embedding import EmbeddingsRequest, EmbeddingsResponse
+from endpoints.OAI.types.rerank import RerankRequest, RerankResponse
 from endpoints.OAI.utils.common_ import load_inline_model
 from endpoints.OAI.utils.chat_completion import (
     apply_chat_template,
@@ -37,6 +38,7 @@ from endpoints.OAI.utils.completion import (
     stream_generate_completion,
 )
 from endpoints.OAI.utils.embeddings import get_embeddings
+from endpoints.OAI.utils.rerank import get_rerank
 
 
 api_name = "OAI"
@@ -44,6 +46,8 @@ router = APIRouter()
 urls = {
     "Completions": "http://{host}:{port}/v1/completions",
     "Chat completions": "http://{host}:{port}/v1/chat/completions",
+    "Embeddings": "http://{host}:{port}/v1/embeddings",
+    "Rerank": "http://{host}:{port}/v1/rerank",
 }
 
 # Block when model is still loading while second inline load request comes in
@@ -203,6 +207,22 @@ async def embeddings(request: Request, data: EmbeddingsRequest) -> EmbeddingsRes
         request,
         embeddings_task,
         f"{request_tag(request)} embeddings cancelled by client",
+    )
+
+    return response
+
+
+# Rerank endpoint
+@router.post(
+    "/v1/rerank",
+    dependencies=[Depends(check_api_key), Depends(check_embeddings_container)],
+)
+async def rerank(request: Request, data: RerankRequest) -> RerankResponse:
+    rerank_task = asyncio.create_task(get_rerank(data, request))
+    response = await run_with_request_disconnect(
+        request,
+        rerank_task,
+        f"{request_tag(request)} rerank cancelled by client",
     )
 
     return response

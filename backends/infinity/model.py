@@ -53,3 +53,19 @@ class InfinityContainer:
         result_embeddings, usage = await self.engine.embed(sentence_input)
 
         return {"embeddings": result_embeddings, "usage": usage}
+
+    async def rerank(
+        self,
+        query: str,
+        documents: List[str],
+        raw_scores: bool = False,
+        top_n: Optional[int] = None,
+    ):
+        results, usage = await self.engine.rerank(
+            query=query,
+            docs=documents,
+            raw_scores=raw_scores,
+            top_n=top_n,
+        )
+
+        return {"results": results, "usage": usage}
