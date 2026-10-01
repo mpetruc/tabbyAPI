@@ -428,7 +428,35 @@ Harness supports per-model goldens (`--golden`); v3.5 golden committed.
 - Full unit suite re-run on the rebuilt env (see run log; only the
   documented out-of-matrix failures remain).
 
-**Open (Wave 3, on request):** CLI/env flags (`--rerank-listwise`,
-`INFINITY_RERANK_LISTWISE`, `--embeddings-dtype`); live TabbyAPI server e2e
-run (the venv is the *infinity* env — TabbyAPI's own runtime env still needs
-to be booted by the operator; harness + both goldens are ready).
+**Wave 3 — CLI flags, done:** `--rerank-listwise` / `INFINITY_RERANK_LISTWISE`
+and `--rerank-passages-per-block` / `INFINITY_RERANK_PASSAGES_PER_BLOCK`
+added to the v2 CLI + env manager and verified end-to-end on CUDA:
+`infinity_emb v2 ... --rerank-listwise` serves `/rerank` with http 200;
+pairwise vs listwise agree on ordering for a 3-doc request (Δ=0.068 in
+cosine — expected: listwise query attends to all docs), each mode already
+proven faithful to the reference by the fidelity suite. Dev matrix now
+includes the `[server]` deps the CLI/server path needs (typer,
+prometheus-fastapi-instrumentator, uvicorn[standard], orjson).
+
+**Open (Wave 4):** live TabbyAPI server e2e run (the venv is the *infinity*
+env — TabbyAPI's own runtime env still needs to be booted by the operator;
+harness + both goldens are ready).
+
+---
+
+## Note — Jina's llama.cpp/GGUF requirements comment (2026)
+
+jinaai/jina-reranker-v3.5-GGUF states the model "requires a non-causal encoder
+mode and a custom --output-token-ids flag that are not yet in the official
+llama.cpp release."
+
+**Assessment: not applicable to this feature.** Those are llama.cpp serving
+runtime gaps (GGUF has no encoder-mode pass / no token-position output
+plumbing). Our engine uses the official HF `transformers` forward via the
+model's own remote `modeling.py`, which extracts the readout-token hidden
+states internally and returns `scores` (cosine) from `forward()` — no
+token-level output hook is needed. Fidelity gates prove equivalence to the
+reference `rerank()` (pairwise rel 1e-4; listwise block-for-block; both
+models, CPU + CUDA). Watch-point: if Jina later changes `modeling.py` itself
+(e.g., bidirectional attention to match llama.cpp), the engine follows the
+loaded module automatically and the fidelity tests re-verify.
