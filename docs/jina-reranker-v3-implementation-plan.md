@@ -17,6 +17,14 @@ environments; a uv-derived lock file is authoritative. Each subagent must
 report the exact uv commands it ran and must not modify files outside its
 ownership list.
 
+**Wave 0 — DONE (2026-10-01); read `docs/jina-reranker-wave0-baseline.md`.**
+Environment resolved and baseline captured: transformers 4.57.6 + ST 3.3.1 +
+torch 2.14.1+cpu (+torchvision +cpu) + pytest 8.x; `infinity_emb/compat.py`
+ST shim shipped on the infinity branch (CodeCarbonCallback re-exposure);
+clone `pyproject.toml` numpy bound relaxed `<2`→`<3`. Baseline: 63 pass /
+15 fail (all optimum/ct2/vision extra gaps or pre-existing CLI/server test
+issues). W-A must treat these as already-shipped inputs, not re-derive them.
+
 ---
 
 ## 1. Objectives and non-goals
@@ -108,19 +116,23 @@ Each brief = mission / files (exclusive ownership) / contract obligations /
 acceptance / constraints.
 
 ### W-A — Platform & dependencies (Agent A) — foundation, mostly standalone
-Mission: land the PR #674 borrow set: `transformers >=4.51.0` (target
-4.57.6), `tokenizers 0.22.2`; port the BetterTransformer fallback fix; remove
-Docker git-install lines; add Qwen3 smoke tests + README model rows;
-re-baseline the existing unit suite. All resolution work via uv.
+Mission: land the PR #674 borrow set on top of Wave 0: `requirements-uv.in` +
+`requirements-uv.lock.txt` (uv-authoritative pin set mirroring the Wave-0
+venv: transformers 4.57.6, tokenizers 0.22.2, ST 3.3.1, torch 2.14.1+cpu,
+pytest 8.x, numpy 2.x); the BetterTransformer fallback fix (acceleration.py);
+removal of Docker git-install lines; Qwen3 smoke tests + README model rows;
+re-run and publish the baseline. **Already shipped by Wave 0 (verify only):**
+`compat.py` + `__init__.py` hook, numpy bound relax, editable-install
+viability.
 
 Files (exclusive):
 - `pyproject.toml` (line 33: `>=4.47.0` → `>=4.51.0`; keep `<=5.0`) — hand edit,
   do not restructure (stays poetry-layout for upstream compatibility)
-- `requirements-uv.in` (new; direct pins: `transformers>=4.51,<=5.0`,
-  `tokenizers==0.22.2`, `sentence-transformers>=3.0,<4.0`, `huggingface_hub<1.0`,
-  `torch>=2.9`) + `requirements-uv.lock.txt` (new; generated with
-  `uv pip compile requirements-uv.in -o requirements-uv.lock.txt`) — the
-  **authoritative** lock; upstream `poetry.lock` is left untouched
+- `requirements-uv.in` (new; direct pins per Wave-0 baseline: `transformers==4.57.6`,
+  `tokenizers==0.22.2`, `sentence-transformers==3.3.1`, `huggingface_hub<1.0`,
+  `torch==2.14.1+cpu` from the cpu index, `pytest>=8,<9`) +
+  `requirements-uv.lock.txt` (new; `uv pip compile`) — the **authoritative**
+  lock; upstream `poetry.lock` is left untouched
 - `infinity_emb/transformer/acceleration.py` (port PR hunk: module-level
   reason, `RuntimeError` catch, warning in `check_if_bettertransformer_possible`)
 - `Dockerfile.jinja2` + generated `Dockerfile.*_auto` (delete the
@@ -213,15 +225,8 @@ models only through the public contract; all model downloads pinned.
 ## 5. Sequencing, waves, gates
 
 ```
-Wave 0  (coordinator + A, ~0.5-1 d)  env bootstrap + baseline (uv only)
-   cd /home/dev/tabbyapi
-   uv venv .venv --python 3.13
-   uv pip install -e "infinity/libs/infinity_emb[torch]" \
-       "sentence-transformers<4.0" "huggingface_hub<1.0"
-   uv pip install "torch>=2.9" \
-       --index-url https://download.pytorch.org/whl/cpu      # CPU dev wheels (py3.13)
-   uv pip check
-   cd infinity/libs/infinity_emb && uv run pytest tests/unit_test -q   # baseline record
+Wave 0  ✅ DONE (2026-10-01) — env + baseline recorded in
+        docs/jina-reranker-wave0-baseline.md; commits on both feature branches
 Wave 1  (A ∥ B ∥ C ∥ D, 3-5 d)        parallel, contract-locked
 Gate G1 (A): new lock green + Qwen3 smokes → unblocks B/C/D integration
 Wave 2  (coordinator + B/C/D, 2-3 d)  integrate; generate golden; run e2e
