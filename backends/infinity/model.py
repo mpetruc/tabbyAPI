@@ -32,6 +32,13 @@ class InfinityContainer:
             device=device,
             bettertransformer=False,
             model_warmup=False,
+            # JinaForRanking (reranker v3/v3.5) knobs: request-grouped
+            # listwise scoring (Option B) and its block size. When False,
+            # the default pairwise path is used (Option A).
+            rerank_listwise=unwrap(kwargs.get("rerank_listwise"), False),
+            rerank_passages_per_block=unwrap(
+                kwargs.get("rerank_passages_per_block"), 16
+            ),
         )
 
         self.engine = AsyncEmbeddingEngine.from_args(engine_args)
@@ -61,6 +68,14 @@ class InfinityContainer:
         raw_scores: bool = False,
         top_n: Optional[int] = None,
     ):
+        """Rerank documents against a query.
+
+        Score semantics follow the loaded model family: crossencoders report
+        sigmoided logits for ``raw_scores=False``, while JinaForRanking
+        engines (reranker v3/v3.5) report cosine similarities in [-1, 1]
+        remapped to [0, 1]; ``raw_scores=True`` always returns the native
+        scores (logits or cosine).
+        """
         results, usage = await self.engine.rerank(
             query=query,
             docs=documents,

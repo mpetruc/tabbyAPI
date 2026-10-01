@@ -741,6 +741,25 @@ class EmbeddingsConfig(BaseConfigModel):
         None,
         description="An initial embedding model to load on the infinity backend.",
     )
+    rerank_listwise: Optional[bool] = Field(
+        False,
+        description=(
+            "Score rerank requests request-grouped (listwise) instead of "
+            "pairwise. Only meaningful for JinaForRanking models "
+            "(jina-reranker-v3/v3.5), where it matches the reference "
+            "implementation's block logic (default: False)."
+        ),
+    )
+    rerank_passages_per_block: Optional[int] = Field(
+        16,
+        ge=1,
+        description=(
+            "Documents per prompt block for listwise reranking "
+            "(rerank_listwise=True). 16 matches the calibration range of the "
+            "Jina paper; the reference implementation hard-codes 125 "
+            "(default: 16)."
+        ),
+    )
 
 
 class MemoryConfig(BaseConfigModel):

@@ -1,0 +1,159 @@
+{
+  "model": "jinaai/jina-reranker-v3",
+  "revision": "d7d7e73b6ea138ced340b83865931b5dfb6c97aa",
+  "queries": [
+    "What is the capital of France?",
+    "How do neural rerankers work?",
+    "What is the tallest building in the world?"
+  ],
+  "documents": [
+    "Paris is the capital and most populous city of France.",
+    "Berlin is the capital of Germany.",
+    "Neural rerankers use cross-encoders to score query-document pairs jointly.",
+    "The Jina reranker-v3 uses a listwise prompt with readout tokens.",
+    "Burj Khalifa in Dubai is the world's tallest building at 828 meters.",
+    "France is a country in Western Europe; its capital is Paris."
+  ],
+  "pairwise": [
+    {
+      "query": "What is the capital of France?",
+      "raw_scores": [
+        0.4337110221385956,
+        -0.10321502387523651,
+        -0.1337689459323883,
+        -0.13595716655254364,
+        -0.13998019695281982,
+        0.3900681436061859
+      ],
+      "normalized_scores": [
+        0.7168555110692978,
+        0.44839248806238174,
+        0.43311552703380585,
+        0.4320214167237282,
+        0.4300099015235901,
+        0.695034071803093
+      ]
+    },
+    {
+      "query": "How do neural rerankers work?",
+      "raw_scores": [
+        -0.131082683801651,
+        -0.12769082188606262,
+        0.45380544662475586,
+        0.10935447365045547,
+        -0.13983309268951416,
+        -0.12230369448661804
+      ],
+      "normalized_scores": [
+        0.4344586580991745,
+        0.4361545890569687,
+        0.7269027233123779,
+        0.5546772368252277,
+        0.4300834536552429,
+        0.438848152756691
+      ]
+    },
+    {
+      "query": "What is the tallest building in the world?",
+      "raw_scores": [
+        -0.12059557437896729,
+        -0.12033123522996902,
+        -0.11676964908838272,
+        -0.11203210800886154,
+        0.3648989796638489,
+        -0.11141809821128845
+      ],
+      "normalized_scores": [
+        0.43970221281051636,
+        0.4398343823850155,
+        0.44161517545580864,
+        0.44398394599556923,
+        0.6824494898319244,
+        0.4442909508943558
+      ]
+    }
+  ],
+  "listwise": [
+    {
+      "query": "What is the capital of France?",
+      "order": [
+        0,
+        5,
+        4,
+        2,
+        1,
+        3
+      ],
+      "raw_scores": [
+        0.361401230096817,
+        0.26919981837272644,
+        -0.12404529750347137,
+        -0.13367992639541626,
+        -0.13526518642902374,
+        -0.15146894752979279
+      ],
+      "normalized_scores": [
+        0.6807006150484085,
+        0.6345999091863632,
+        0.4379773512482643,
+        0.43316003680229187,
+        0.43236740678548813,
+        0.4242655262351036
+      ]
+    },
+    {
+      "query": "How do neural rerankers work?",
+      "order": [
+        2,
+        3,
+        5,
+        4,
+        1,
+        0
+      ],
+      "raw_scores": [
+        0.4498220980167389,
+        -0.035344332456588745,
+        -0.11329668015241623,
+        -0.1252266764640808,
+        -0.1278802454471588,
+        -0.138857901096344
+      ],
+      "normalized_scores": [
+        0.7249110490083694,
+        0.4823278337717056,
+        0.4433516599237919,
+        0.4373866617679596,
+        0.4360598772764206,
+        0.430571049451828
+      ]
+    },
+    {
+      "query": "What is the tallest building in the world?",
+      "order": [
+        4,
+        5,
+        0,
+        1,
+        2,
+        3
+      ],
+      "raw_scores": [
+        0.42419204115867615,
+        -0.11149855703115463,
+        -0.12210752815008163,
+        -0.1361987292766571,
+        -0.15585435926914215,
+        -0.16542403399944305
+      ],
+      "normalized_scores": [
+        0.7120960205793381,
+        0.4442507214844227,
+        0.4389462359249592,
+        0.43190063536167145,
+        0.4220728203654289,
+        0.4172879830002785
+      ]
+    }
+  ]
+}

@@ -422,6 +422,15 @@ embeddings:
   # An initial embedding model to load on the infinity backend.
   embedding_model_name:
 
+  # Rerank request-grouped (listwise) instead of pairwise. Only meaningful
+  # for JinaForRanking rerankers (jina-reranker-v3 / v3.5); matches the
+  # reference block logic (default: false).
+  rerank_listwise: false
+
+  # Documents per prompt block for listwise reranking. 16 matches the
+  # calibration range of the Jina paper (default: 16).
+  rerank_passages_per_block: 16
+
 # Global memory settings
 memory:
 

@@ -22,6 +22,10 @@ async def get_rerank(data: RerankRequest, request: Request) -> RerankResponse:
 
     xlogger.debug(f"Received rerank request {request.state.id}")
 
+    # raw_scores passthrough: infinity returns native scores — sigmoid logits
+    # for seq-cls crossencoders, cosine similarities in [-1, 1] for the
+    # JinaForRanking family (reranker v3/v3.5). Normalized scores are
+    # [0, 1] in both cases.
     try:
         rerank_data = await model.embeddings_container.rerank(
             query=data.query,
