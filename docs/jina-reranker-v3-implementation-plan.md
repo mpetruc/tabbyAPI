@@ -438,9 +438,22 @@ proven faithful to the reference by the fidelity suite. Dev matrix now
 includes the `[server]` deps the CLI/server path needs (typer,
 prometheus-fastapi-instrumentator, uvicorn[standard], orjson).
 
-**Open (Wave 4):** live TabbyAPI server e2e run (the venv is the *infinity*
-env — TabbyAPI's own runtime env still needs to be booted by the operator;
-harness + both goldens are ready).
+**Open (Wave 4):** live TabbyAPI server e2e run against a real boot
+(harness + both goldens are ready).
+
+**Wave 5 — standalone branch (no separate infinity clone):** the fork is
+now **vendored into this branch** at `infinity/libs/infinity_emb` (MIT
+LICENSE included; the upstream nested git checkout was detached).
+`[tool.uv.sources]` maps `infinity-emb` to that path, and the extras
+bounds were tightened to floors so any resolver (including stale mirrors)
+can't pick ancient versions (ST 2.2.2 imports `cached_download`, removed
+from hub ≥ 0.26): `sentence-transformers >= 3.0.1, < 4.0`,
+`transformers >= 4.51, <= 5.0`, `huggingface_hub >= 0.32, < 1.0`. Fresh
+venv install of `uv pip install -U ".[extras]"` was verified to resolve
+ST 3.4.1 / transformers 4.57.6 / hub 0.36.2 / tokenizers 0.22.2 and
+install the fork from the vendored path with both rerank knobs present.
+ExLlamaV3/torch remain the `cu12` extra (pre-existing installs untouched;
+fresh boxes: `uv pip install -U ".[extras,cu12]"`).
 
 ---
 

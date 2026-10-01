@@ -51,11 +51,17 @@ dependencies = [
 extras = [
     # Heavy dependencies that aren't for everyday use
     "infinity-emb",
-    # Match the bound infinity-emb declares for its torch engine
-    "sentence-transformers < 4.0",
-    # infinity-emb uses the pre-1.0 huggingface_hub API (HfFolder) and doesn't
-    # bound it upstream. See issue #414.
-    "huggingface_hub < 1.0",
+    # Bounds mirroring the vendored fork's declared constraints. Without
+    # floors, resolvers (and stale mirrors) may pick ancient versions:
+    # sentence-transformers 2.x imports `cached_download` (removed from
+    # huggingface_hub >= 0.26) and transformers 4.17 predates the fork's
+    # remote-code path. Validated: ST 3.3.1 / transformers 4.57.6 /
+    # hub 0.36.2.
+    "sentence-transformers >= 3.0.1, < 4.0",
+    "transformers >= 4.51.0, <= 5.0",
+    # infinity-emb uses the pre-1.0 huggingface_hub API (HfFolder) and
+    # doesn't bound it upstream. See issue #414.
+    "huggingface_hub >= 0.32, < 1.0",
 ]
 dev = [
     "ruff == 0.11.10"
@@ -234,3 +240,11 @@ line-ending = "auto"
 # Don't format/validate test scripts
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ALL"]
+
+# The `extras` extra installs the *vendored* infinity_emb fork (see
+# infinity/libs/infinity_emb), NOT the PyPI package. The fork carries the
+# Jina reranker v3/v3.5 support (rerank_listwise etc.) and the exact torch
+# matrix validated for this branch. PEP 503 normalization means the fork's
+# dist name (infinity_emb) satisfies the "infinity-emb" extras requirement.
+[tool.uv.sources]
+infinity-emb = { path = "infinity/libs/infinity_emb" }

@@ -133,3 +133,30 @@ Creators/Developers:
 - [Splice86](https://github.com/Splice86)
 
 - [Turboderp](https://github.com/turboderp)
+
+## Embeddings & rerankers (`[extras]`)
+
+The embeddings/rerank stack uses infinity-emb **vendored into this branch** at
+`infinity/libs/infinity_emb` — a fork carrying the Jina reranker v3/v3.5
+support (`rerank_listwise`, per-family truncation caps, cosine score
+semantics) and the exact torch matrix this branch was validated against. It
+is wired through `[tool.uv.sources]`, so PEP 503 normalization makes the
+fork's dist name (`infinity_emb`) satisfy the `infinity-emb` extras
+requirement — the PyPI upstream package is never fetched.
+
+```bash
+uv pip install -U ".[extras]"
+```
+
+is complete and self-sufficient on top of a working install (existing
+`torch`/`exllamav3` from the `cu12` extra are left untouched). On a fresh
+box, install the whole stack in one go:
+
+```bash
+uv pip install -U ".[extras,cu12]"
+```
+
+The `jina-reranker-v3` / `jina-reranker-v3.5` weights serve over
+`POST /v1/rerank` once loaded into the embeddings container (see
+`config_sample.yml` → `embeddings:` → `embedding_model_name`,
+`rerank_listwise`, `rerank_passages_per_block`, `embeddings_dtype`).
