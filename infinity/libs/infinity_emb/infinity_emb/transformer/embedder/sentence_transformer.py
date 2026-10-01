@@ -15,6 +15,7 @@ from infinity_emb._optional_imports import (
 from infinity_emb.args import EngineArgs
 from infinity_emb.log_handler import logger
 from infinity_emb.primitives import Device
+from infinity_emb.transformer._compat import from_pretrained_dtype_kwarg
 from infinity_emb.transformer.abstract import BaseEmbedder
 from infinity_emb.transformer.acceleration import (
     to_bettertransformer,
@@ -67,7 +68,7 @@ class SentenceTransformerPatched(SentenceTransformer, BaseEmbedder):
         assert ls is not None
 
         if ls.loading_dtype is not None:
-            model_kwargs["torch_dtype"] = ls.loading_dtype
+            model_kwargs[from_pretrained_dtype_kwarg()] = ls.loading_dtype
 
         super().__init__(
             engine_args.model_name_or_path,

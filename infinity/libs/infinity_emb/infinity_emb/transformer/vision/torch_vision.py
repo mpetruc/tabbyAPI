@@ -13,6 +13,7 @@ from infinity_emb._optional_imports import (
 )
 from infinity_emb.args import EngineArgs
 from infinity_emb.primitives import Device, Dtype
+from infinity_emb.transformer._compat import from_pretrained_dtype_kwarg
 from infinity_emb.transformer.abstract import BaseTIMM
 from infinity_emb.transformer.quantization.interface import (
     quant_embedding_decorator,
@@ -52,10 +53,12 @@ class TIMM(BaseTIMM):
         device = engine_args.device
         if device == Device.auto and torch.cuda.is_available():
             device = Device.cuda
+        # pop the version-appropriate dtype kwarg once and reuse it below
+        dtype_kwarg = from_pretrained_dtype_kwarg()
         if device == "cuda" and engine_args.dtype in (Dtype.float16, Dtype.bfloat16):
-            extra_model_args["torch_dtype"] = engine_args.dtype.value
+            extra_model_args[dtype_kwarg] = engine_args.dtype.value
         elif device == "cuda" and engine_args.dtype in (Dtype.auto):
-            extra_model_args["torch_dtype"] = "float16"
+            extra_model_args[dtype_kwarg] = "float16"
 
         if self.is_colipali:
             CHECK_COLPALI_ENGINE.mark_required()

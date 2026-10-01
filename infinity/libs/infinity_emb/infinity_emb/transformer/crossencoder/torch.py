@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from torch import Tensor
 
 
+from infinity_emb.transformer._compat import from_pretrained_dtype_kwarg
 from infinity_emb.transformer.acceleration import (
     to_bettertransformer,
     check_if_bettertransformer_possible,
@@ -53,7 +54,7 @@ class CrossEncoderPatched(CrossEncoder, BaseCrossEncoder):
         assert ls is not None
 
         if ls.loading_dtype is not None:  # type: ignore
-            model_kwargs["torch_dtype"] = ls.loading_dtype
+            model_kwargs[from_pretrained_dtype_kwarg()] = ls.loading_dtype
 
         super().__init__(
             engine_args.model_name_or_path,

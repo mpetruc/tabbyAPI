@@ -45,6 +45,7 @@ from infinity_emb._optional_imports import (
 )
 from infinity_emb.args import EngineArgs
 from infinity_emb.log_handler import logger
+from infinity_emb.transformer._compat import from_pretrained_dtype_kwarg
 from infinity_emb.transformer.abstract import BaseCrossEncoder
 
 if CHECK_TORCH.is_available and CHECK_TRANSFORMERS.is_available:
@@ -89,7 +90,7 @@ class JinaV3CrossEncoder(BaseCrossEncoder):
 
         model_kwargs = {}
         if ls.loading_dtype is not None:  # type: ignore[attr-defined]
-            model_kwargs["torch_dtype"] = ls.loading_dtype
+            model_kwargs[from_pretrained_dtype_kwarg()] = ls.loading_dtype
 
         self.model = AutoModel.from_pretrained(
             engine_args.model_name_or_path,
@@ -104,6 +105,11 @@ class JinaV3CrossEncoder(BaseCrossEncoder):
             engine_args.model_name_or_path,
             revision=engine_args.revision,
             trust_remote_code=engine_args.trust_remote_code,
+            # Jina v3/v3.5 ship a Mistral-Small-3.1-24B-derived tokenizer with
+            # the known-buggy pre-tokenizer regex baked into tokenizer.json.
+            # transformers >= 4.57 warns about it and replaces the pattern only
+            # when this flag is set (on older versions it is inert).
+            fix_mistral_regex=True,
         )
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.unk_token
