@@ -160,3 +160,10 @@ The `jina-reranker-v3` / `jina-reranker-v3.5` weights serve over
 `POST /v1/rerank` once loaded into the embeddings container (see
 `config_sample.yml` → `embeddings:` → `embedding_model_name`,
 `rerank_listwise`, `rerank_passages_per_block`, `embeddings_dtype`).
+
+> **Torch ABI hazard:** never re-run the extras install with `-U` after the
+> `cu12` stack (torch 2.9.0+cu128 + exllamav3 1.5.2) is in the venv —
+> sentence-transformers carries a `torch` dependency, so `-U` drifts torch
+> off the exllamav3 ABI and breaks `exllamav3_ext.so` (`undefined symbol:
+> c10_cuda_check_implementation`). Install extras without `-U` on existing
+> envs; restore a drifted env with `uv pip install -U ".[cu12]"`.
