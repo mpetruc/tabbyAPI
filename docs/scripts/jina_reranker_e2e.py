@@ -63,22 +63,22 @@ def main() -> int:
         ]
         if args.listwise:
             expected_order = entry["order"]
-            expected_norm = dict(
-                zip(expected_order, entry["normalized_scores"])
-            )
+            expected_norm = entry["normalized_by_doc"]
+            expected_raw = entry["raw_scores_by_doc"]
         else:
             expected_norm = dict(enumerate(entry["normalized_scores"]))
+            expected_raw = dict(enumerate(entry["raw_scores"]))
             expected_order = sorted(
                 expected_norm, key=expected_norm.get, reverse=True
             )
 
         got_order = [idx for idx, _ in got]
-        got_norm = dict(got)
+        got_norm = dict((str(i), s) for i, s in got)
 
         order_ok = got_order == expected_order
         score_ok = all(
-            math.isclose(got_norm[str(i)], expected_norm[i], rel_tol=TOL, abs_tol=TOL)
-            for i in expected_norm
+            math.isclose(got_norm[str(i)], v, rel_tol=TOL, abs_tol=TOL)
+            for i, v in expected_norm.items()
         )
 
         # raw passthrough
@@ -86,8 +86,8 @@ def main() -> int:
         resp_raw = post(args.url, "/v1/rerank", payload)
         raw = {r["index"]: r["relevance_score"] for r in resp_raw["results"]}  # type: ignore[attr-defined]
         raw_ok = all(
-            math.isclose(raw[str(i)], entry_expected, rel_tol=TOL, abs_tol=TOL)
-            for i, entry_expected in enumerate(entry["raw_scores"])
+            math.isclose(raw[str(i)], v, rel_tol=TOL, abs_tol=TOL)
+            for i, v in expected_raw.items()
         )
 
         status = "OK " if order_ok and score_ok and raw_ok else "FAIL"

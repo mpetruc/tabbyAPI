@@ -77,17 +77,23 @@ def main() -> None:
             }
         )
 
-    # Listwise (Option B): request-grouped block logic, engine-level
+    # Listwise (Option B): request-grouped block logic, engine-level.
+    # Scores are keyed by DOCUMENT INDEX (input order), not rank position.
     for query in QUERIES:
         order, scores = engine.rerank_list(
             query, DOCUMENTS, passages_per_block=16, top_n=len(DOCUMENTS)
         )
+        by_doc = {str(i): 0.0 for i in range(len(DOCUMENTS))}
+        for rank, doc_idx in enumerate(order):
+            by_doc[str(doc_idx)] = float(scores[rank])
         golden["listwise"].append(
             {
                 "query": query,
                 "order": order,
-                "raw_scores": scores,
-                "normalized_scores": [0.5 * (s + 1.0) for s in scores],
+                "raw_scores_by_doc": by_doc,
+                "normalized_by_doc": {
+                    k: 0.5 * (v + 1.0) for k, v in by_doc.items()
+                },
             }
         )
 

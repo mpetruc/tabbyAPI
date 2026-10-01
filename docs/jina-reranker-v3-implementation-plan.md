@@ -306,3 +306,78 @@ way). Everything is asserted against that:
 - Open risks / assumptions; anything needing the coordinator.
 Coordinator runs §6 verification before accepting; rejected work returns
 with the failing check attached.
+
+---
+
+## Wave 1 — DONE (2026-10-01); executed as four contract-locked workstreams
+
+All four workstreams landed and were verified **against the real model**
+(`jinaai/jina-reranker-v3` @ `d7d7e73b…`, ~1.2 GB download, CPU).
+
+**Commits:** infinity `69bca1f` · TabbyAPI `a6efdf7` (+ docs/scripts fixes).
+
+**W-A (matrix/docs):** transformers floor `>=4.51`, dev pin `4.57.6`;
+BetterTransformer import now catches `RuntimeError` (optimum ≤1.27) with a
+module-level reason + warning; all 5 Dockerfiles drop the
+`transformers@7547f55e` git build; `requirements-uv.in` +
+`requirements-uv.lock.txt` (38 pins, `uv pip compile` with
+`--index-strategy unsafe-best-match`); README rows (jina-reranker-v3/v3.5,
+Qwen3-Embedding); gated Qwen3-Embedding ST smoke test.
+
+**W-B (detection + Option A):** `select_model.py` maps exact arch
+`JinaForRanking` → `RerankEngine.jina_v3` (takes precedence over seq-cls);
+`crossencoder/jina_v3.py` loads via `AutoModel(trust_remote_code=True)`,
+builds prompts with the remote module's `format_docs_prompts_func` verbatim
+(resolved from the loaded module — resilient to upstream format drift),
+relies on the remote `forward()` computing cosine scores from the readout
+token positions; `score_range = "cosine"`.
+
+**W-C (score semantics + Option B):** `BatchHandler.rerank` normalizes
+range-aware (C2: sigmoid for logits engines, `0.5·(x+1)` for cosine); listwise
+routing (`_rerank_listwise`) with `rerank_list()` (Option B) mirroring the
+remote `rerank()` reference logic (block flush, per-block max-normalized
+weights, request-global weighted query embedding), serialized by an
+engine-level lock (C3); `EngineArgs` gains `rerank_listwise` /
+`rerank_passages_per_block` (validated ≥1).
+
+**W-D (TabbyAPI surface):** `InfinityContainer.load` threads both knobs into
+`EngineArgs`; `EmbeddingsConfig` + `EmbeddingModelLoadRequest` + 
+`config_sample.yml` document them; `/v1/rerank` handler notes cosine
+raw-score semantics; e2e harness: `docs/scripts/generate_golden.py`,
+`docs/scripts/jina_reranker_golden.json`, `docs/scripts/jina_reranker_e2e.py`.
+
+### Wave-1 verification results (§6 gates)
+
+| Gate | Result |
+|---|---|
+| G1 model loads | ✓ (pinned revision, fresh modules cache) |
+| G2 prompt fidelity | ✓ verbatim — test asserts **bytecode-const** suffix of the loaded function, immune to display/upstream drift |
+| G3 fidelity A vs remote | ✓ pairwise scores == remote `rerank()` single-doc, rel 1e-4 |
+| G3 fidelity B vs remote | ✓ `passages_per_block=125` == remote block-for-block (rtol 1e-4) |
+| G4 score contract | ✓ stub matrix (logits/cosine × raw/not) + live engine through `AsyncEmbeddingEngine` (order + scores vs golden, both modes) |
+| G5 no regression | ✓ full unit suite: 69 pass / 21 fail — all out-of-matrix (optimum/ct2/diskcache/CLI env, pre-existing) |
+
+### Findings folded back (ground truth)
+
+1. **The remote prompt format is load-bearing and revision-locked.** The
+   pinned revision renders `assistant\n<thinking>\n\n</thinking>\n\n` for
+   `no_thinking=True`; upstream has changed this literal across pushes, so
+   engines/tests must never hard-code it — always reuse the loaded module's
+   function (authenticated by bytecode-const checks).
+2. **`forward()` needs no manual readout math at batch level** — the remote
+   code locates token ids 151670/151671 internally and returns `scores`.
+3. **`transformer/utils.RerankEngine.jina_v3` + arch detection at
+   config.json level** is enough; `spawn`/worker plumbing unchanged (Option A
+   uses the existing per-pair pipeline; Option B routes by flag).
+4. Golden scores are **keyed by document index** (not rank) to avoid
+   compare-ambiguity in the harness.
+
+### Open items (Wave 2, on request)
+
+- v3.5 matrix check (needs `jinaai/jina-reranker-v3.5` weights + its
+  truncation defaults query 1024/doc 8192 and `thinking` prompt variant);
+- CLI flags for `--rerank-listwise` (`INFINITY_RERANK_LISTWISE`) — fields
+  exist in `EngineArgs`, CLI auto-gen verified only for the API path;
+- running `docs/scripts/jina_reranker_e2e.py` against a live TabbyAPI
+  instance (requires the TabbyAPI runtime env; the harness + golden are CI-able
+  as-is); the AsyncEmbeddingEngine seam was verified in-env.
