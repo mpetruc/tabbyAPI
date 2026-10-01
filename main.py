@@ -5,9 +5,11 @@ import os
 
 import argparse
 import asyncio
+import importlib.util
 import pathlib
 import platform
 import signal
+import subprocess
 from loguru import logger
 from typing import Optional
 
@@ -21,6 +23,62 @@ from common.optional_dependencies import dependencies
 from common.signals import signal_handler
 from common.status_display import status_display
 from common.tabby_config import config
+
+
+def _log_build_info() -> None:
+    """Log the running codebase identity: installed version, git commit/date.
+
+    The commit hash and committer date come from the repo containing this
+    file, so operators can confirm the checkout they pulled is the code
+    actually executing. Also resolves the vendored infinity_emb engine path
+    (without importing it): a path outside the checkout means a stale
+    installed copy is shadowing the source -- the usual cause of "still the
+    old behavior after git pull".
+    """
+    try:
+        from importlib.metadata import PackageNotFoundError, version as pkg_version
+
+        installed = pkg_version("tabbyapi")
+    except (ImportError, PackageNotFoundError):
+        installed = "unknown"
+
+    git_line = "no git metadata (not a repo checkout)"
+    repo_root = pathlib.Path(__file__).resolve().parent
+    try:
+        log = subprocess.run(
+            ["git", "-C", str(repo_root), "log", "-1", "--format=%h %cI"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if log.returncode == 0 and log.stdout.strip():
+            git_line = log.stdout.strip()
+        branch = subprocess.run(
+            ["git", "-C", str(repo_root), "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if branch.returncode == 0 and branch.stdout.strip():
+            git_line += f" on {branch.stdout.strip()}"
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+    logger.info(f"tabbyAPI {installed} | git commit {git_line}")
+
+    try:
+        spec = importlib.util.find_spec("infinity_emb")
+        if spec is None or spec.origin is None:
+            return
+        engine_path = pathlib.Path(spec.origin).resolve()
+        vendored = repo_root / "infinity" / "libs" / "infinity_emb"
+        if engine_path.is_relative_to(vendored):
+            origin = "vendored checkout (live)"
+        else:
+            origin = "installed copy (STALE -- reinstall from checkout)"
+        logger.info(f"infinity_emb engine: {engine_path} [{origin}]")
+    except Exception:
+        pass
 
 
 async def entrypoint_async():
@@ -139,6 +197,8 @@ def entrypoint(
     parser: Optional[argparse.ArgumentParser] = None,
 ):
     setup_logger()
+
+    _log_build_info()
 
     # Set up signal aborting
     signal.signal(signal.SIGINT, signal_handler)

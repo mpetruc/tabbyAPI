@@ -252,5 +252,8 @@ line-ending = "auto"
 # Jina reranker v3/v3.5 support (rerank_listwise etc.) and the exact torch
 # matrix validated for this branch. PEP 503 normalization means the fork's
 # dist name (infinity_emb) satisfies the "infinity-emb" extras requirement.
+# Installed *editable* (path .pth), so the engine that runs is always the
+# checked-out source: a `git pull` is immediately live and stale wheel
+# copies in site-packages cannot masquerade as newer code.
 [tool.uv.sources]
-infinity-emb = { path = "infinity/libs/infinity_emb" }
+infinity-emb = { path = "infinity/libs/infinity_emb", editable = true }
