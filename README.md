@@ -161,6 +161,9 @@ The `jina-reranker-v3` / `jina-reranker-v3.5` weights serve over
 `config_sample.yml` → `embeddings:` → `embedding_model_name`,
 `rerank_listwise`, `rerank_passages_per_block`, `embeddings_dtype`).
 
+Tuning, semantics, and limits are explained in
+[docs/jina-reranker-v3-faq.md](docs/jina-reranker-v3-faq.md).
+
 > **Torch ABI hazard:** never re-run the extras install with `-U` after the
 > `cu12` stack (torch 2.9.0+cu128 + exllamav3 1.5.2) is in the venv —
 > sentence-transformers carries a `torch` dependency, so `-U` drifts torch

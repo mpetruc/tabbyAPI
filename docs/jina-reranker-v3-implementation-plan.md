@@ -8,6 +8,11 @@ tests, Dockerfile cleanup), verified model facts (HF, 2026-03/08).
 **Deliverable of this document:** delegation matrix, interface contracts,
 sequencing, gates, and the coordinator's verification protocol.
 
+**Operator FAQ:** see [jina-reranker-v3-faq.md](jina-reranker-v3-faq.md) for
+how the engine handles long documents (truncation vs block fan-out), the
+blocks/passages/documents vocabulary, where knob values come from (model vs
+TabbyAPI/infinity), what to expect at 1,000 documents, and `top_n` semantics.
+
 **Package management (project convention — mandatory):** uv ONLY. Every
 environment create, install, and dependency-resolution step in this plan uses
 `uv` (`uv venv`, `uv pip install`, `uv pip compile`, `uv run`). Raw `pip`,
