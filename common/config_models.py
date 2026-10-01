@@ -728,6 +728,15 @@ class EmbeddingsConfig(BaseConfigModel):
         "models",
         description=("Directory to look for embedding models (default: models)."),
     )
+    embeddings_dtype: Optional[str] = Field(
+        "auto",
+        description=(
+            "Data type for embedding/rerank models (auto, float32, float16, "
+            "bfloat16). JinaForRanking rerankers drift cosine scores by ~1e-3 "
+            "in bf16/fp16 vs float32 (ordering is unaffected); use float32 for "
+            "golden-grade score reproducibility (default: auto)."
+        ),
+    )
     embeddings_device: Optional[Literal["cpu", "auto", "cuda"]] = Field(
         "cpu",
         description=(

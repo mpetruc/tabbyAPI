@@ -30,6 +30,7 @@ class InfinityContainer:
             model_name_or_path=str(self.model_dir),
             engine="torch",
             device=device,
+            dtype=unwrap(kwargs.get("embeddings_dtype"), "auto"),
             bettertransformer=False,
             model_warmup=False,
             # JinaForRanking (reranker v3/v3.5) knobs: request-grouped

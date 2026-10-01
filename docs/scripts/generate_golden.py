@@ -25,6 +25,8 @@ MODEL_ID = os.getenv("JINA_RERANKER_V3_MODEL", "jinaai/jina-reranker-v3")
 REVISION = os.getenv(
     "JINA_RERANKER_V3_REVISION", "d7d7e73b6ea138ced340b83865931b5dfb6c97aa"
 )
+DEVICE = getattr(Device, os.getenv("JINA_DEVICE", "cpu").upper(), Device.cpu)
+DTYPE = os.getenv("JINA_DTYPE", "float32")
 
 QUERIES = [
     "What is the capital of France?",
@@ -47,7 +49,8 @@ def main() -> None:
         engine_args=EngineArgs(
             model_name_or_path=MODEL_ID,
             revision=REVISION,
-            device=Device.cpu,
+            device=DEVICE,
+            dtype=DTYPE,
             model_warmup=False,
             batch_size=16,
             rerank_listwise=True,

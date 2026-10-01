@@ -30,6 +30,10 @@ GOLDEN = json.loads(
     (Path(__file__).parent / "jina_reranker_golden.json").read_text()
 )
 
+GOLDEN_V35 = json.loads(
+    (Path(__file__).parent / "jina_reranker_v35_golden.json").read_text()
+)
+
 
 def post(url: str, path: str, payload: dict) -> dict:
     req = urllib.request.Request(
@@ -48,10 +52,18 @@ def main() -> int:
     ap.add_argument(
         "--listwise", action="store_true", help="expect listwise (Option B) behavior"
     )
+    ap.add_argument(
+        "--golden",
+        default=None,
+        help="golden file (default: v3 file; use jina_reranker_v35_golden.json "
+        "for reranker-v3.5)",
+    )
     args = ap.parse_args()
 
+    golden = GOLDEN if args.golden is None else json.loads(Path(args.golden).read_text())
+
     failures = 0
-    for entry in GOLDEN["listwise" if args.listwise else "pairwise"]:
+    for entry in golden["listwise" if args.listwise else "pairwise"]:
         query = entry["query"]
         payload = {"query": query, "documents": GOLDEN["documents"]}
 

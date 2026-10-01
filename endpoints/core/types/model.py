@@ -154,6 +154,7 @@ class EmbeddingModelLoadRequest(BaseModel):
 
     # Set default from the config
     embeddings_device: Optional[str] = Field(config.embeddings.embeddings_device)
+    embeddings_dtype: Optional[str] = Field(config.embeddings.embeddings_dtype)
     rerank_listwise: Optional[bool] = Field(config.embeddings.rerank_listwise)
     rerank_passages_per_block: Optional[int] = Field(
         config.embeddings.rerank_passages_per_block

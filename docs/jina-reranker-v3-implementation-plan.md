@@ -381,3 +381,54 @@ raw-score semantics; e2e harness: `docs/scripts/generate_golden.py`,
 - running `docs/scripts/jina_reranker_e2e.py` against a live TabbyAPI
   instance (requires the TabbyAPI runtime env; the harness + golden are CI-able
   as-is); the AsyncEmbeddingEngine seam was verified in-env.
+
+---
+
+## Wave 2 — GPU + v3.5 (DONE 2026-10-01)
+
+GPU (RTX 3080 Laptop 16 GB, sm_86, driver 576.52, compute 8.6) became
+available. Everything below verified on `device=cuda` with the built matrix.
+
+**Environment hardening (uv only):**
+- The dev venv's torch was `+cpu`; swapped to `torch==2.14.1+cu126` /
+  `torchvision==0.29.1+cu126` (the only CUDA variant published for 2.14.1).
+- The system `/usr/bin/python3.13` had **no `Python.h`** → Triton's first
+  CUDA JIT compile crashed (`Python.h: No such file or directory`). Rebuilt
+  the venv on a **uv-managed CPython 3.13.15** (ships headers); Triton now
+  compiles its `cuda_utils` at first kernel launch.
+- New `requirements-uv-gpu.in` + `requirements-uv-gpu.lock.txt` (pinned to
+  `+cu126`, recompiled from the env each time); both locks recompile with
+  `--index-strategy unsafe-best-match --index-url <pytorch index>
+  --extra-index-url https://pypi.org/simple`. Install honors the same flags.
+- Test tooling: the `pytest-anyio` PyPI distribution is a 0.0.0 stub on this
+  index; the plugin ships inside `anyio` itself — pin `anyio>=4` in both
+  locks.
+
+**Engine hardening (`crossencoder/jina_v3.py`):**
+- Truncation caps are per-family: reranker-v3 exposes `max_query_length`
+  (512) / `max_doc_length` (2048) as `rerank()` signature defaults; **v3.5
+  hard-codes 1024/8192 in the remote body**. `_resolve_truncation_caps()`
+  now unwraps `@torch.no_grad()` via `__wrapped__`, reads signature defaults
+  first, then bytecode constants; `rerank_list()` uses the resolved caps.
+- New dtype warning: loading in bf16/fp16 drifts cosine scores ~1e-3 vs
+  float32 (ordering unaffected). Use `dtype=float32` for golden-grade
+  cross-device score reproducibility (measured: max diff 8.4e-5 vs 1.9e-3).
+
+**TabbyAPI surface:** new `embeddings_dtype` config (auto|float32|float16|
+bfloat16) threaded `config_sample.yml` → `EmbeddingsConfig` →
+`EmbeddingModelLoadRequest` → `InfinityContainer.load` → `EngineArgs.dtype`.
+Harness supports per-model goldens (`--golden`); v3.5 golden committed.
+
+**Verification (CUDA):**
+- v3 and v3.5 each pass the full model-backed suite (`JINA_DEVICE=cuda`,
+  both suites: 6/6) — prompt-verbatim, pairwise == remote single-doc,
+  listwise == remote block-for-block **using the resolved per-family caps**.
+- AsyncEmbeddingEngine e2e on cuda: both modes order-exact vs golden;
+  fp32 restores score-exact (8.4e-5), bf16 keeps order.
+- Full unit suite re-run on the rebuilt env (see run log; only the
+  documented out-of-matrix failures remain).
+
+**Open (Wave 3, on request):** CLI/env flags (`--rerank-listwise`,
+`INFINITY_RERANK_LISTWISE`, `--embeddings-dtype`); live TabbyAPI server e2e
+run (the venv is the *infinity* env — TabbyAPI's own runtime env still needs
+to be booted by the operator; harness + both goldens are ready).

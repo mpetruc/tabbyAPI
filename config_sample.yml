@@ -413,6 +413,10 @@ embeddings:
   # Directory to look for embedding models (default: models).
   embedding_model_dir: models
 
+  # Data type for embedding/rerank models (auto|float32|float16|bfloat16;
+  # default: auto). Use float32 for golden-grade rerank score reproducibility.
+  embeddings_dtype: auto
+
   # Device to load embedding models on (default: cpu).
   # Possible values: cpu, auto, cuda.
   # NOTE: It's recommended to load embedding models on the CPU.
