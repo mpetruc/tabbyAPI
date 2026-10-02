@@ -20,6 +20,7 @@ from infinity_emb.primitives import (
     PoolingMethod,
     LoadingStrategy,
 )
+from infinity_emb.transformer.attention import ATTN_IMPLEMENTATIONS
 
 if CHECK_PYDANTIC.is_available:
     from pydantic.dataclasses import dataclass as dataclass_pydantic
@@ -73,6 +74,7 @@ class EngineArgs:
     onnx_do_not_prefer_quantized: bool = MANAGER.onnx_do_not_prefer_quantized[0]
     rerank_listwise: bool = False
     rerank_passages_per_block: int = 16
+    attn_implementation: Optional[str] = MANAGER.attn_implementation[0]
 
     _loading_strategy: Optional[LoadingStrategy] = None
 
@@ -109,6 +111,20 @@ class EngineArgs:
             )
         if self.revision is not None and self.revision == "":
             object.__setattr__(self, "revision", None)
+
+        # attn_implementation: empty/unset means model default (like revision);
+        # invalid values are reset to None with a warning (like rerank_passages_per_block)
+        if self.attn_implementation is not None and self.attn_implementation == "":
+            object.__setattr__(self, "attn_implementation", None)
+        if (
+            self.attn_implementation is not None
+            and self.attn_implementation not in ATTN_IMPLEMENTATIONS
+        ):
+            logger.warning(
+                f"attn_implementation={self.attn_implementation} is invalid, "
+                "resetting to None (model default)."
+            )
+            object.__setattr__(self, "attn_implementation", None)
         if isinstance(self.vector_disk_cache_path, bool):
             object.__setattr__(
                 self,

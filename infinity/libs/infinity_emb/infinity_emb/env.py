@@ -112,6 +112,10 @@ class __Infinity_EnvManager:
         return self._optional_infinity_var_multiple("revision", default=[""])
 
     @cached_property
+    def attn_implementation(self):
+        return self._optional_infinity_var_multiple("attn_implementation", default=[""])
+
+    @cached_property
     def trust_remote_code(self):
         return self._to_bool_multiple(
             self._optional_infinity_var_multiple("trust_remote_code", default=["true"])

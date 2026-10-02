@@ -4,13 +4,17 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from infinity_emb._optional_imports import CHECK_SENTENCE_TRANSFORMERS, CHECK_TORCH
 from infinity_emb.args import EngineArgs
 from infinity_emb.log_handler import logger
 from infinity_emb.primitives import Device
 from infinity_emb.transformer.abstract import BaseCrossEncoder
+from infinity_emb.transformer.attention import (
+    resolve_attn_implementation,
+    verify_attn_implementation,
+)
 from infinity_emb.transformer.quantization.interface import (
     quant_interface,
 )
@@ -47,11 +51,28 @@ class CrossEncoderPatched(CrossEncoder, BaseCrossEncoder):
 
         model_kwargs = {}
         attempt_bt = check_if_bettertransformer_possible(engine_args)
-        if engine_args.bettertransformer and attempt_bt:
-            model_kwargs["attn_implementation"] = "eager"
 
         ls = engine_args._loading_strategy
         assert ls is not None
+
+        resolved_attn: Optional[str] = None
+        if engine_args.bettertransformer and attempt_bt:
+            # bettertransformer forces the eager implementation and wins over
+            # any user-requested value
+            model_kwargs["attn_implementation"] = "eager"
+            resolved_attn = "eager"
+            if engine_args.attn_implementation not in (None, "eager"):
+                logger.warning(
+                    f"attn_implementation={engine_args.attn_implementation!r} requested "
+                    "but `bettertransformer` forces attn_implementation=\"eager\"; "
+                    "using eager."
+                )
+        else:
+            resolved_attn = resolve_attn_implementation(
+                engine_args.attn_implementation, ls.loading_dtype
+            )
+            if resolved_attn is not None:
+                model_kwargs["attn_implementation"] = resolved_attn
 
         if ls.loading_dtype is not None:  # type: ignore
             model_kwargs[from_pretrained_dtype_kwarg()] = ls.loading_dtype
@@ -64,6 +85,7 @@ class CrossEncoderPatched(CrossEncoder, BaseCrossEncoder):
             automodel_args=model_kwargs,
         )
         self.model.to(ls.device_placement)
+        verify_attn_implementation(self.model, resolved_attn)
 
         # make a copy of the tokenizer,
         # to be able to could the tokens in another thread

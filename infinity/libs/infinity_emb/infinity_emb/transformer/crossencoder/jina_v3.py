@@ -47,6 +47,10 @@ from infinity_emb.args import EngineArgs
 from infinity_emb.log_handler import logger
 from infinity_emb.transformer._compat import from_pretrained_dtype_kwarg
 from infinity_emb.transformer.abstract import BaseCrossEncoder
+from infinity_emb.transformer.attention import (
+    resolve_attn_implementation,
+    verify_attn_implementation,
+)
 
 if CHECK_TORCH.is_available and CHECK_TRANSFORMERS.is_available:
     import torch
@@ -91,6 +95,11 @@ class JinaV3CrossEncoder(BaseCrossEncoder):
         model_kwargs = {}
         if ls.loading_dtype is not None:  # type: ignore[attr-defined]
             model_kwargs[from_pretrained_dtype_kwarg()] = ls.loading_dtype
+        resolved_attn = resolve_attn_implementation(
+            engine_args.attn_implementation, ls.loading_dtype
+        )
+        if resolved_attn is not None:
+            model_kwargs["attn_implementation"] = resolved_attn
 
         self.model = AutoModel.from_pretrained(
             engine_args.model_name_or_path,
@@ -100,6 +109,7 @@ class JinaV3CrossEncoder(BaseCrossEncoder):
         )
         self.model.to(ls.device_placement)
         self.model.eval()
+        verify_attn_implementation(self.model, resolved_attn)
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             engine_args.model_name_or_path,

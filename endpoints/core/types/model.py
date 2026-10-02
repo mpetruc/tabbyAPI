@@ -159,6 +159,9 @@ class EmbeddingModelLoadRequest(BaseModel):
     rerank_passages_per_block: Optional[int] = Field(
         config.embeddings.rerank_passages_per_block
     )
+    embeddings_attn_implementation: Optional[str] = Field(
+        config.embeddings.embeddings_attn_implementation
+    )
 
 
 class ModelLoadResponse(BaseModel):

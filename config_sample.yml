@@ -435,6 +435,10 @@ embeddings:
   # calibration range of the Jina paper (default: 16).
   rerank_passages_per_block: 16
 
+  # Attention implementation for torch-engine rerankers (eager|sdpa|
+  # flash_attention_2; default: model default).
+  #embeddings_attn_implementation: flash_attention_2
+
 # Global memory settings
 memory:
 

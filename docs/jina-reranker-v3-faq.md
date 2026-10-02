@@ -171,6 +171,55 @@ sorted descending. Everything else is scored but not sent back.
 - Validation: `ge=1` (no 0/negative); asking for more than the list length
   returns the whole list.
 
+## Q7. Why do long rerank requests OOM even though the model only uses 3 GB?
+
+Because the OOM is not the weights — it's the **attention mask**, and the mask
+is quadratic in the prompt length while the weights are constant.
+
+Every forward pass materializes a dense attention mask of shape
+`[B, 1, L, L]` — **O(L²) entries**. Qwen3-derived models (v3/v3.5) build
+**two** of these (full-attention layers + sliding-window layers), and the sdpa
+path then runs an in-kernel fp32 conversion of the same size. A 32k-char-doc
+listwise request hit exactly this on a 24 GiB card: `Currently allocated
+14.15 GiB`, then `Requested 29.14 GiB` for the fp32 mask conversion against
+`Device limit 23.54 GiB` → `torch.OutOfMemoryError`. The ~3 GB of resident
+model weights were not the issue; an ~88k-token block's mask alone wanted
+~29 GB.
+
+**Why the 131k-token context doesn't save you.** Context length is a *token
+budget*, not a memory budget. Listwise mode (`rerank_listwise: true`) packs up
+to 16 documents × up to 8,192 tokens each (v3.5 family cap) into one block —
+that's L ≈ 131k in a single forward, and L² at 131k is ~1.7e10 entries
+(~68 GB as fp32). The larger the context the model advertises, the larger the
+blow-up *when you actually fill it*. Truncation caps (Q1) limit per-document
+length, not per-block length — a block of 16 long documents still goes to the
+context cap.
+
+**The fix: `flash_attention_2`.** Set `embeddings_attn_implementation:
+flash_attention_2` in `config.yml` → `embeddings:` (or the
+`embeddings_attn_implementation` field on the `/v1/model/embedding/load`
+payload); it is plumbed to `EngineArgs.attn_implementation`. Flash attention
+computes attention without materializing the `[B, 1, L, L]` mask (padding is
+handled in-kernel), so memory drops to **O(B·L)** and a full 131k-token block
+fits. It is honored only when BOTH hold:
+
+1. the `flash-attn` package is installed (`pip install flash-attn`; on
+   Python 3.13 it builds from source — CUDA toolkit required, and on sm89/
+   RTX 4090 use the 2.x line, flash-attn 3.x is Hopper-only), AND
+2. `embeddings_dtype` is `float16`/`bfloat16` (or `auto`) — FA2 kernels are
+   fp16/bf16 only.
+
+Otherwise the engine **falls back to `sdpa` with a visible warning at load**
+(flash-attn missing, or float32 loading-dtype); requests keep working, just
+without the flash memory profile. `float32` remains the choice for
+golden-grade score reproducibility — bf16 drifts jina cosine scores ~1e-3,
+ordering unaffected. Counting on neither is also fine: chunking documents
+client-side to ≤ 2–4k tokens keeps every block's L small, so the O(L²) mask
+never gets large enough to OOM — chunking is complementary to flash attention,
+not a replacement for it, and means the fallback path is never exercised.
+
+Full operator guide: [flash-attention-usage.md](flash-attention-usage.md).
+
 ---
 
 ## Score semantics cheat sheet (pairwise vs listwise)

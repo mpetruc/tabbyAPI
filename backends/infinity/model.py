@@ -40,6 +40,9 @@ class InfinityContainer:
             rerank_passages_per_block=unwrap(
                 kwargs.get("rerank_passages_per_block"), 16
             ),
+            attn_implementation=unwrap(
+                kwargs.get("embeddings_attn_implementation"), None
+            ),
         )
 
         self.engine = AsyncEmbeddingEngine.from_args(engine_args)

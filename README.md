@@ -161,6 +161,15 @@ The `jina-reranker-v3` / `jina-reranker-v3.5` weights serve over
 `config_sample.yml` → `embeddings:` → `embedding_model_name`,
 `rerank_listwise`, `rerank_passages_per_block`, `embeddings_dtype`).
 
+Listwise blocks of long documents allocate a dense `[B, 1, L, L]` attention
+mask per forward pass — quadratic in prompt length, so filling the 131k-token
+context can OOM a 24 GiB card. Set `embeddings.embeddings_attn_implementation:
+flash_attention_2` (or the `embeddings_attn_implementation` field on the
+`/v1/model/embedding/load` payload) to drop that allocation to O(L); it
+requires `pip install flash-attn` and a non-float32 `embeddings_dtype`, and
+falls back to `sdpa` with a visible warning otherwise — see
+[docs/flash-attention-usage.md](docs/flash-attention-usage.md).
+
 Tuning, semantics, and limits are explained in
 [docs/jina-reranker-v3-faq.md](docs/jina-reranker-v3-faq.md).
 

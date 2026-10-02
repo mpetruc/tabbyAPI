@@ -769,6 +769,23 @@ class EmbeddingsConfig(BaseConfigModel):
             "(default: 16)."
         ),
     )
+    embeddings_attn_implementation: Optional[
+        Literal["eager", "sdpa", "flash_attention_2"]
+    ] = Field(
+        None,
+        description=(
+            "Attention implementation for torch-engine rerankers "
+            "(JinaForRanking v3/v3.5 and sentence-transformers "
+            "cross-encoders): eager, sdpa, flash_attention_2, or unset "
+            "(model default). flash_attention_2 removes the dense O(L^2) "
+            "attention-mask allocation so long 131k-context listwise blocks "
+            "fit in VRAM; it falls back to sdpa with a warning if flash-attn "
+            "is not installed or embeddings_dtype is float32. Requires "
+            "`pip install flash-attn` and an fp16/bf16 embeddings_dtype "
+            "(bf16 drifts jina cosine scores ~1e-3 vs float32, ordering "
+            "unaffected) (default: unset)."
+        ),
+    )
 
 
 class MemoryConfig(BaseConfigModel):
