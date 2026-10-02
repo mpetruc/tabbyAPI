@@ -145,10 +145,14 @@ Flash attention kernels are **fp16/bf16 only**. The engine checks your
 
 ## Verifying it took effect
 
-At model load the service logs exactly one of:
+At model load the service logs the resolved choice, then exactly one of the
+following confirmations:
 
-- **Honored** — nothing out of the ordinary; the requested implementation is
-  in `model_kwargs`.
+- **Resolved (always logged, INFO)** –
+  `attention implementation for <model>: flash_attention_2` (or
+  `model default` when the knob is unset) plus, after the weights load,
+  `attention implementation 'flash_attention_2' active after load.` — this is
+  the success signal.
 - **flash-attn missing** –
   `attn_implementation="flash_attention_2" requested but the \`flash-attn\` package is not installed (pip install flash-attn); falling back to sdpa.`
 - **float32 block** –

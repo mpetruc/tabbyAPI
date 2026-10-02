@@ -77,6 +77,12 @@ class CrossEncoderPatched(CrossEncoder, BaseCrossEncoder):
         if ls.loading_dtype is not None:  # type: ignore
             model_kwargs[from_pretrained_dtype_kwarg()] = ls.loading_dtype
 
+        logger.info(
+            "attention implementation for %s: %s",
+            engine_args.model_name_or_path,
+            resolved_attn or "model default",
+        )
+
         super().__init__(
             engine_args.model_name_or_path,
             revision=engine_args.revision,

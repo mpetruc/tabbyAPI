@@ -100,6 +100,11 @@ class JinaV3CrossEncoder(BaseCrossEncoder):
         )
         if resolved_attn is not None:
             model_kwargs["attn_implementation"] = resolved_attn
+        logger.info(
+            "attention implementation for %s: %s",
+            engine_args.model_name_or_path,
+            resolved_attn or "model default",
+        )
 
         self.model = AutoModel.from_pretrained(
             engine_args.model_name_or_path,

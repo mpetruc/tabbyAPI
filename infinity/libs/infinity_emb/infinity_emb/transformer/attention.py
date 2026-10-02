@@ -100,3 +100,5 @@ def verify_attn_implementation(model, requested: Optional[str]) -> None:
             "implementations pin their own attention; scores are still valid, "
             "but the memory profile of flash attention is not active."
         )
+    else:
+        logger.info(f"attention implementation {effective!r} active after load.")
