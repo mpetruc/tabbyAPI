@@ -58,22 +58,37 @@ knob, not a substitute requirement either way.
 
 ## Installing flash-attn
 
-`flash-attn` is **not** part of the extras install — it is an operator-side
-install (build complexity; the fallback path below keeps a missing install
-safe and loud):
+`flash-attn` is an opt-in **`flash` extra** (it builds from source — see
+below — so it must not be in the default paths):
 
 ```bash
-pip install flash-attn
+uv pip install ".[extras,cu13,flash]"
 ```
 
-- **Python 3.13 (this repo's runtime)**: flash-attn publishes wheels only up to
-  Python 3.12 — on 3.13 `pip install flash-attn` **builds from source** and
-  needs the CUDA toolkit (`nvcc`) + a C/C++ compiler on the host. Expect a
-  10–20 min build the first time.
-- **sm89 (RTX 4090)**: must use the **2.x** line (2.7.x/2.8.x) — flash-attn
+How it works, so the semantics aren't magic:
+
+- flash-attn publishes **no Python 3.13 wheels**, so uv builds the 2.8.x
+  sdist. Its `setup.py` imports `torch` at build time without declaring it as
+  a build dependency — which is why target-env builds fail with
+  `ModuleNotFoundError: No module named 'torch'`.
+- The repo injects the **same cu130 torch wheels as the `cu13` extra** into
+  the isolated build environment via `[tool.uv.extra-build-dependencies]`
+  (kept in sync with `cu13`), so the extension compiles against the exact
+  headers it runs with.
+- The host still needs a **CUDA toolkit** (`nvcc`) and a C/C++ compiler, plus
+  time — expect a 10–20 min first build. Tune it:
+  ```bash
+  export TORCH_CUDA_ARCH_LIST="8.9"   # sm89/4090 only → minutes, not an hour
+  export MAX_JOBS=${MAX_JOBS:-4}      # don't let the build exhaust RAM
+  uv pip install ".[extras,cu13,flash]"
+  ```
+- **cu12-stack users**: the build-env injection mirrors `cu13` only; on the
+  cu12 stack install manually so the build sees your torch:
+  `uv pip install --no-build-isolation "flash-attn==2.8.*"`.
+- **sm89 (RTX 4090)**: stay on the 2.x line the extra pins — flash-attn
   3.x is Hopper-only (sm90).
-- **macOS / CPU / non-NVIDIA**: flash-attn is unavailable; the engine falls
-  back to `sdpa` with a visible warning (see below).
+- **macOS / CPU / non-NVIDIA**: flash-attn cannot build/run; the engine
+  falls back to `sdpa` with a visible warning (see below).
 
 ## Config knob
 

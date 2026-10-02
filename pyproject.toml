@@ -124,6 +124,14 @@ cu13 = [
     "exllamav3 @ https://github.com/turboderp-org/exllamav3/releases/download/v1.5.2/exllamav3-1.5.2%2Bcu132.torch2.11.0-cp313-cp313-linux_x86_64.whl ; platform_system == 'Linux' and platform_machine == 'x86_64' and python_version == '3.13'",
     "exllamav3 @ https://github.com/turboderp-org/exllamav3/releases/download/v1.5.2/exllamav3-1.5.2%2Bcu132.torch2.11.0-cp312-cp312-linux_x86_64.whl ; platform_system == 'Linux' and platform_machine == 'x86_64' and python_version == '3.12'",
 ]
+flash = [
+    # flash-attn 2.x only: 3.x is Hopper-only (sm90), no sm89/4090 support.
+    # No cp313 wheels exist upstream, so uv builds the sdist; the build env
+    # torch is injected via [tool.uv.extra-build-dependencies] (below) so
+    # setup.py's build-time `import torch` succeeds against the SAME cu130
+    # wheels the runtime uses. Host still needs a CUDA toolkit (nvcc).
+    "flash-attn==2.8.*",
+]
 # MARK: Ruff options
 
 [tool.ruff]
@@ -257,3 +265,18 @@ line-ending = "auto"
 # copies in site-packages cannot masquerade as newer code.
 [tool.uv.sources]
 infinity-emb = { path = "infinity/libs/infinity_emb", editable = true }
+
+# flash-attn's sdist does not declare torch as a build dependency, but its
+# setup.py imports torch at build time. Inject the SAME cu130 torch wheels as
+# the `cu13` extra so the extension is compiled against the exact headers it
+# runs with (keep in sync with `cu13`; cu12-stack users should instead run
+# `uv pip install --no-build-isolation "flash-attn==2.8.*"` in their venv).
+[tool.uv.extra-build-dependencies]
+flash-attn = [
+    "torch @ https://download.pytorch.org/whl/cu130/torch-2.11.0%2Bcu130-cp314-cp314-win_amd64.whl ; platform_system == 'Windows' and python_version == '3.14'",
+    "torch @ https://download.pytorch.org/whl/cu130/torch-2.11.0%2Bcu130-cp313-cp313-win_amd64.whl ; platform_system == 'Windows' and python_version == '3.13'",
+    "torch @ https://download.pytorch.org/whl/cu130/torch-2.11.0%2Bcu130-cp312-cp312-win_amd64.whl ; platform_system == 'Windows' and python_version == '3.12'",
+    "torch @ https://download.pytorch.org/whl/cu130/torch-2.11.0%2Bcu130-cp314-cp314-manylinux_2_28_x86_64.whl ; platform_system == 'Linux' and platform_machine == 'x86_64' and python_version == '3.14'",
+    "torch @ https://download.pytorch.org/whl/cu130/torch-2.11.0%2Bcu130-cp313-cp313-manylinux_2_28_x86_64.whl ; platform_system == 'Linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "torch @ https://download.pytorch.org/whl/cu130/torch-2.11.0%2Bcu130-cp312-cp312-manylinux_2_28_x86_64.whl ; platform_system == 'Linux' and platform_machine == 'x86_64' and python_version == '3.12'",
+]

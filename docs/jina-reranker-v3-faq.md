@@ -203,9 +203,10 @@ computes attention without materializing the `[B, 1, L, L]` mask (padding is
 handled in-kernel), so memory drops to **O(B·L)** and a full 131k-token block
 fits. It is honored only when BOTH hold:
 
-1. the `flash-attn` package is installed (`pip install flash-attn`; on
-   Python 3.13 it builds from source — CUDA toolkit required, and on sm89/
-   RTX 4090 use the 2.x line, flash-attn 3.x is Hopper-only), AND
+1. the `flash-attn` package is installed (canonically via the `flash` extra:
+   `uv pip install ".[extras,cu13,flash]"` — it builds from source, CUDA
+   toolkit required on the host; sm89/RTX 4090 stays on the 2.x line,
+   flash-attn 3.x is Hopper-only), AND
 2. `embeddings_dtype` is `float16`/`bfloat16` (or `auto`) — FA2 kernels are
    fp16/bf16 only.
 
