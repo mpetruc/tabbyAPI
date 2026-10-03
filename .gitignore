@@ -216,3 +216,7 @@ openapi.json
 
 # Backup files
 *.bak
+
+# Local tooling state / setup marker (never commit)
+.serena/
+.setup_complete
